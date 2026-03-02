@@ -42,7 +42,62 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	
+
+	virtual void Jump() override;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	// Damage
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ApplyDamageToSelf(float DamageAmount);
+
+	// Sprint / Stamina
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void StartSprint();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void StopSprint();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
+	bool IsSprinting() const { return bIsSprinting; }
+
+	// Health
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Attributes")
+	float GetHealth() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Attributes")
+	float GetMaxHealth() const;
+
+	// Stamina
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Attributes")
+	float GetStamina() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Attributes")
+	float GetMaxStamina() const;
+
+	/** Zużywa staminę (np. przy ataku). Zwraca true, jeśli było wystarczająco staminy i odjęto koszt. */
+	UFUNCTION(BlueprintCallable, Category = "Attributes")
+	bool ConsumeStamina(float Amount);
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
+	float WalkSpeed = 500.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
+	float SprintSpeed = 750.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina")
+	float StaminaDrainPerSecond = 25.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina")
+	float StaminaRegenPerSecond = 15.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina")
+	float StaminaRegenDelaySeconds = 0.75f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina", meta = (ClampMin = "0"))
+	float JumpStaminaCost = 15.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
+	bool bIsSprinting = false;
+
+	float TimeSinceSprintStopped = 0.f;
 };
