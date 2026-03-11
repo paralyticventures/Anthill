@@ -103,6 +103,10 @@ void AAnthillCharacterBase::Tick(float DeltaTime)
 				);
 			}
 		}
+
+		// ApplyModToAttributeUnsafe nie wywołuje clampów z AttributeSet – pilnujemy [0, MaxStamina] ręcznie
+		const float Clamped = FMath::Clamp(BasicAttributeSet->GetStamina(), 0.f, BasicAttributeSet->GetMaxStamina());
+		BasicAttributeSet->SetStamina(Clamped);
 	}
 }
 
@@ -214,7 +218,14 @@ bool AAnthillCharacterBase::ConsumeStamina(float Amount)
 		return false;
 	}
 
-	const float Current = BasicAttributeSet->GetStamina();
+	// Uwzględniamy tylko staminę w zakresie [0, Max] (na wypadek wcześniejszego overflowu)
+	const float MaxSt = BasicAttributeSet->GetMaxStamina();
+	float Current = BasicAttributeSet->GetStamina();
+	if (Current > MaxSt)
+	{
+		BasicAttributeSet->SetStamina(MaxSt);
+		Current = MaxSt;
+	}
 	if (Current < Amount)
 	{
 		return false;
@@ -225,6 +236,8 @@ bool AAnthillCharacterBase::ConsumeStamina(float Amount)
 		EGameplayModOp::Additive,
 		-Amount
 	);
+	// Clamp po odjęciu (ApplyModToAttributeUnsafe nie wywołuje PreAttributeChange)
+	BasicAttributeSet->SetStamina(FMath::Clamp(BasicAttributeSet->GetStamina(), 0.f, MaxSt));
 	return true;
 }
 
