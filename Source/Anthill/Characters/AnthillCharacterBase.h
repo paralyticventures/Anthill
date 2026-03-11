@@ -77,6 +77,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 	bool ConsumeStamina(float Amount);
 
+	/** Wywołaj z Blueprinta po wykonaniu ataku – opóźnia regenerację staminy i włącza cooldown. */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void NotifyAttackPerformed();
+
+	/** Czy można teraz wykonać atak (false w trakcie cooldownu po poprzednim ataku). Sprawdź w Blueprintcie przed Consume Stamina. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat")
+	bool CanPerformAttack() const;
+
+	/** Wywoływane gdy Health spadnie do 0 (Blueprint może zareagować: animacja śmierci, wyłączenie sterowania). */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat", meta = (DisplayName = "On Death"))
+	void OnDeath();
+
+	/** Odrodzenie: wywołaj z Blueprinta (np. po naciśnięciu R na ekranie śmierci). Prosi Game Mode o respawn (nowa postać). */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void Respawn();
+
+	/** Odrodzenie w miejscu: teleport na Player Start, HP i stamina na 100%%, włączenie inputu. Użyj zamiast Respawn, jeśli RestartPlayer nie działa. */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ReviveAtPlayerStart();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
 	float WalkSpeed = 500.f;
@@ -96,8 +116,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina", meta = (ClampMin = "0"))
 	float JumpStaminaCost = 15.f;
 
+	/** Czas (s) po ataku, po którym stamina znowu się regeneruje. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina", meta = (ClampMin = "0"))
+	float StaminaRegenDelayAfterAttackSeconds = 1.5f;
+
+	/** Cooldown ataku (s) – przez ten czas kolejne kliknięcia nie wykonają ataku ani nie zabiorą staminy. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
+	float AttackCooldownSeconds = 0.6f;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Movement|Sprint")
 	bool bIsSprinting = false;
 
 	float TimeSinceSprintStopped = 0.f;
+	float TimeSinceLastAttack = 9999.f;
+	float TimeSinceLastAttackTrigger = 9999.f;
 };

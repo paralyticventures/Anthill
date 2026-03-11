@@ -6,6 +6,10 @@
 #include "Anthill/GameplayAbilitySystem/Attributes/BasicAttributeSet.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/GameModeBase.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/PlayerStart.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -48,6 +52,10 @@ void AAnthillCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Czas od ostatniego ataku (do opóźnienia regeneracji staminy i cooldownu ataku)
+	TimeSinceLastAttack += DeltaTime;
+	TimeSinceLastAttackTrigger += DeltaTime;
+
 	// Serwerowo aktualizujemy atrybuty staminy.
 	if (HasAuthority() && AbilitySystemComponent && BasicAttributeSet)
 	{
@@ -76,13 +84,16 @@ void AAnthillCharacterBase::Tick(float DeltaTime)
 			}
 			else
 			{
-				// Stoi z wciśniętym Shift – traktujemy jak odpoczynek, stamina się odnawia.
-				const float Regen = StaminaRegenPerSecond * DeltaTime;
-				AbilitySystemComponent->ApplyModToAttributeUnsafe(
-					BasicAttributeSet->GetStaminaAttribute(),
-					EGameplayModOp::Additive,
-					Regen
-				);
+				// Stoi z wciśniętym Shift – odpoczynek; regen tylko gdy minęło opóźnienie po ataku
+				if (TimeSinceLastAttack >= StaminaRegenDelayAfterAttackSeconds)
+				{
+					const float Regen = StaminaRegenPerSecond * DeltaTime;
+					AbilitySystemComponent->ApplyModToAttributeUnsafe(
+						BasicAttributeSet->GetStaminaAttribute(),
+						EGameplayModOp::Additive,
+						Regen
+					);
+				}
 			}
 
 			if (BasicAttributeSet->GetStamina() <= 0.f)
@@ -93,7 +104,10 @@ void AAnthillCharacterBase::Tick(float DeltaTime)
 		else
 		{
 			TimeSinceSprintStopped += DeltaTime;
-			if (TimeSinceSprintStopped >= StaminaRegenDelaySeconds)
+			// Regen tylko gdy minęło opóźnienie po sprintcie i po ataku
+			const bool bCanRegenAfterSprint = TimeSinceSprintStopped >= StaminaRegenDelaySeconds;
+			const bool bCanRegenAfterAttack = TimeSinceLastAttack >= StaminaRegenDelayAfterAttackSeconds;
+			if (bCanRegenAfterSprint && bCanRegenAfterAttack)
 			{
 				const float Regen = StaminaRegenPerSecond * DeltaTime;
 				AbilitySystemComponent->ApplyModToAttributeUnsafe(
@@ -118,9 +132,14 @@ void AAnthillCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 void AAnthillCharacterBase::Jump()
 {
+	// Staminę zabieramy tylko gdy postać faktycznie może skoczyć (np. stoi na ziemi)
+	if (!CanJump())
+	{
+		return;
+	}
 	if (JumpStaminaCost > 0.f && !ConsumeStamina(JumpStaminaCost))
 	{
-		return; // Za mało staminy – brak skoku
+		return;
 	}
 	Super::Jump();
 }
@@ -153,21 +172,92 @@ UAbilitySystemComponent* AAnthillCharacterBase::GetAbilitySystemComponent() cons
 
 void AAnthillCharacterBase::ApplyDamageToSelf(float DamageAmount)
 {
-	if (!HasAuthority() || !AbilitySystemComponent || !BasicAttributeSet)
+	if (!HasAuthority() || !BasicAttributeSet || DamageAmount <= 0.f)
 	{
 		return;
 	}
 
-	if (DamageAmount <= 0.f)
+	// Modyfikujemy tylko CurrentValue (get/set + clamp), żeby BaseValue pozostawał stały (MaxHealth).
+	const float MaxH = BasicAttributeSet->GetMaxHealth();
+	float H = BasicAttributeSet->GetHealth();
+	H = FMath::Clamp(H - DamageAmount, 0.f, MaxH);
+	BasicAttributeSet->SetHealth(H);
+
+	if (H <= 0.f)
+	{
+		OnDeath();
+	}
+}
+
+void AAnthillCharacterBase::Respawn()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	UWorld* World = GetWorld();
+	if (!PC || !World)
+	{
+		return;
+	}
+	AGameModeBase* GM = World->GetAuthGameMode();
+	if (GM)
+	{
+		GM->RestartPlayer(PC);
+	}
+}
+
+void AAnthillCharacterBase::ReviveAtPlayerStart()
+{
+	if (!HasAuthority() || !BasicAttributeSet)
 	{
 		return;
 	}
 
-	AbilitySystemComponent->ApplyModToAttributeUnsafe(
-		BasicAttributeSet->GetHealthAttribute(),
-		EGameplayModOp::Additive,
-		-DamageAmount
-	);
+	// Teleport na Player Start
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	UWorld* World = GetWorld();
+	if (PC && World)
+	{
+		AGameModeBase* GM = World->GetAuthGameMode();
+		if (GM)
+		{
+			AActor* StartSpot = GM->FindPlayerStart(PC);
+			if (StartSpot)
+			{
+				SetActorLocation(StartSpot->GetActorLocation());
+				SetActorRotation(StartSpot->GetActorRotation());
+				if (UCharacterMovementComponent* Move = GetCharacterMovement())
+				{
+					Move->Velocity = FVector::Zero();
+				}
+			}
+		}
+		else
+		{
+			// Brak Game Mode – szukaj dowolnego PlayerStart w świecie
+			TArray<AActor*> Starts;
+			UGameplayStatics::GetAllActorsOfClass(World, APlayerStart::StaticClass(), Starts);
+			if (Starts.Num() > 0)
+			{
+				SetActorLocation(Starts[0]->GetActorLocation());
+				SetActorRotation(Starts[0]->GetActorRotation());
+				if (UCharacterMovementComponent* Move = GetCharacterMovement())
+				{
+					Move->Velocity = FVector::Zero();
+				}
+			}
+		}
+	}
+
+	// HP i stamina na 100%
+	const float MaxH = BasicAttributeSet->GetMaxHealth();
+	const float MaxS = BasicAttributeSet->GetMaxStamina();
+	BasicAttributeSet->SetHealth(MaxH);
+	BasicAttributeSet->SetStamina(MaxS);
+
+	// Włączenie inputu (gdy było wyłączone przy śmierci)
+	if (PC)
+	{
+		PC->EnableInput(PC);
+	}
 }
 
 void AAnthillCharacterBase::StartSprint()
@@ -209,6 +299,17 @@ float AAnthillCharacterBase::GetStamina() const
 float AAnthillCharacterBase::GetMaxStamina() const
 {
 	return BasicAttributeSet ? BasicAttributeSet->GetMaxStamina() : 0.f;
+}
+
+void AAnthillCharacterBase::NotifyAttackPerformed()
+{
+	TimeSinceLastAttack = 0.f;
+	TimeSinceLastAttackTrigger = 0.f;
+}
+
+bool AAnthillCharacterBase::CanPerformAttack() const
+{
+	return TimeSinceLastAttackTrigger >= AttackCooldownSeconds;
 }
 
 bool AAnthillCharacterBase::ConsumeStamina(float Amount)
