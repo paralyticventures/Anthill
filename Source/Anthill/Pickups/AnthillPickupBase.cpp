@@ -35,6 +35,24 @@ void AAnthillPickupBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 		return;
 	}
 
+	if (bAddToInventory)
+	{
+		float V1 = 0.f, V2 = 0.f;
+		switch (PickupType)
+		{
+		case EPickupType::Heal:        V1 = HealAmount; break;
+		case EPickupType::MaxStamina:  V1 = MaxStaminaAmount; break;
+		case EPickupType::MaxHealth:   V1 = MaxHealthAmount; break;
+		case EPickupType::AttackBuff:  V1 = AttackBuffMultiplier; V2 = AttackBuffDurationSeconds; break;
+		default: break;
+		}
+		if (Character->AddItemToInventory(PickupType, V1, V2))
+		{
+			Destroy();
+		}
+		return;
+	}
+
 	switch (PickupType)
 	{
 	case EPickupType::Heal:

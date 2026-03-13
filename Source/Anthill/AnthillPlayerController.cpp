@@ -2,12 +2,15 @@
 
 #include "AnthillPlayerController.h"
 #include "Anthill/UI/HealthStaminaWidget.h"
+#include "Anthill/UI/InventoryBarWidget.h"
 #include "Blueprint/UserWidget.h"
 
 AAnthillPlayerController::AAnthillPlayerController()
 {
 	HealthStaminaWidgetClass = nullptr;
 	HealthStaminaWidget = nullptr;
+	InventoryBarWidgetClass = nullptr;
+	InventoryBarWidget = nullptr;
 }
 
 void AAnthillPlayerController::BeginPlay()
@@ -20,6 +23,15 @@ void AAnthillPlayerController::BeginPlay()
 		if (HealthStaminaWidget)
 		{
 			HealthStaminaWidget->AddToViewport();
+		}
+	}
+
+	if (InventoryBarWidgetClass)
+	{
+		InventoryBarWidget = CreateWidget<UUserWidget>(this, InventoryBarWidgetClass);
+		if (InventoryBarWidget)
+		{
+			InventoryBarWidget->AddToViewport();
 		}
 	}
 }
