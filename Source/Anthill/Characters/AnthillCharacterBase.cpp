@@ -260,6 +260,47 @@ void AAnthillCharacterBase::ReviveAtPlayerStart()
 	}
 }
 
+void AAnthillCharacterBase::Heal(float Amount)
+{
+	if (!HasAuthority() || !BasicAttributeSet || Amount <= 0.f) return;
+	const float MaxH = BasicAttributeSet->GetMaxHealth();
+	float H = FMath::Clamp(BasicAttributeSet->GetHealth() + Amount, 0.f, MaxH);
+	BasicAttributeSet->SetHealth(H);
+}
+
+void AAnthillCharacterBase::AddMaxHealth(float Amount)
+{
+	if (!HasAuthority() || !BasicAttributeSet || Amount <= 0.f) return;
+	const float NewMax = BasicAttributeSet->GetMaxHealth() + Amount;
+	BasicAttributeSet->SetMaxHealth(NewMax);
+	float H = FMath::Min(BasicAttributeSet->GetHealth() + Amount, NewMax);
+	BasicAttributeSet->SetHealth(H);
+}
+
+void AAnthillCharacterBase::AddMaxStamina(float Amount)
+{
+	if (!HasAuthority() || !BasicAttributeSet || Amount <= 0.f) return;
+	const float NewMax = BasicAttributeSet->GetMaxStamina() + Amount;
+	BasicAttributeSet->SetMaxStamina(NewMax);
+	float S = FMath::Min(BasicAttributeSet->GetStamina() + Amount, NewMax);
+	BasicAttributeSet->SetStamina(S);
+}
+
+void AAnthillCharacterBase::SetAttackBuff(float Multiplier, float DurationSeconds)
+{
+	if (!GetWorld() || DurationSeconds <= 0.f) return;
+	AttackBuffMultiplier = FMath::Max(1.f, Multiplier);
+	AttackBuffEndTime = GetWorld()->GetTimeSeconds() + DurationSeconds;
+}
+
+float AAnthillCharacterBase::GetAttackDamageMultiplier() const
+{
+	const UWorld* World = GetWorld();
+	if (!World || World->GetTimeSeconds() >= AttackBuffEndTime)
+		return 1.f;
+	return AttackBuffMultiplier;
+}
+
 void AAnthillCharacterBase::StartSprint()
 {
 	bIsSprinting = true;
