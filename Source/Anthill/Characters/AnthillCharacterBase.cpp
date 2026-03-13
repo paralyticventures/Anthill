@@ -4,6 +4,7 @@
 #include "AnthillCharacterBase.h"
 
 #include "Anthill/GameplayAbilitySystem/Attributes/BasicAttributeSet.h"
+#include "Anthill/Pickups/AnthillPickupBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/GameModeBase.h"
@@ -39,6 +40,15 @@ AAnthillCharacterBase::AAnthillCharacterBase()
 	
 	// Zestaw atrybutów (Health, Stamina) – subobject tej samej postaci co ASC
 	BasicAttributeSet = CreateDefaultSubobject<UBasicAttributeSet>(TEXT("BasicAttributeSet"));
+
+	InventorySlots.SetNum(InventorySlotCount);
+}
+
+void AAnthillCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AAnthillCharacterBase, InventorySlots);
+	DOREPLIFETIME(AAnthillCharacterBase, SelectedInventorySlotIndex);
 }
 
 // Called when the game starts or when spawned
@@ -299,6 +309,75 @@ float AAnthillCharacterBase::GetAttackDamageMultiplier() const
 	if (!World || World->GetTimeSeconds() >= AttackBuffEndTime)
 		return 1.f;
 	return AttackBuffMultiplier;
+}
+
+// --- Pasek przedmiotów (EQ) ---
+bool AAnthillCharacterBase::AddItemToInventory(EPickupType Type, float Value1, float Value2)
+{
+	if (!HasAuthority() || InventorySlots.Num() != InventorySlotCount) return false;
+	for (FInventorySlot& Slot : InventorySlots)
+	{
+		if (!Slot.bValid)
+		{
+			Slot.bValid = true;
+			Slot.Type = Type;
+			Slot.Value1 = Value1;
+			Slot.Value2 = Value2;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool AAnthillCharacterBase::UseInventorySlot(int32 SlotIndex)
+{
+	if (!HasAuthority() || SlotIndex < 0 || SlotIndex >= InventorySlots.Num()) return false;
+	FInventorySlot& Slot = InventorySlots[SlotIndex];
+	if (!Slot.bValid || !BasicAttributeSet) return false;
+
+	switch (Slot.Type)
+	{
+	case EPickupType::Heal:
+		Heal(Slot.Value1);
+		break;
+	case EPickupType::MaxStamina:
+		AddMaxStamina(Slot.Value1);
+		break;
+	case EPickupType::MaxHealth:
+		AddMaxHealth(Slot.Value1);
+		break;
+	case EPickupType::AttackBuff:
+		SetAttackBuff(Slot.Value1, Slot.Value2);
+		break;
+	default:
+		break;
+	}
+	Slot.bValid = false;
+	Slot.Value1 = Slot.Value2 = 0.f;
+	return true;
+}
+
+FInventorySlot AAnthillCharacterBase::GetInventorySlot(int32 SlotIndex) const
+{
+	FInventorySlot Empty;
+	Empty.bValid = false;
+	if (SlotIndex < 0 || SlotIndex >= InventorySlots.Num()) return Empty;
+	return InventorySlots[SlotIndex];
+}
+
+void AAnthillCharacterBase::SetSelectedInventorySlotIndex(int32 Index)
+{
+	SelectedInventorySlotIndex = FMath::Clamp(Index, 0, InventorySlotCount - 1);
+}
+
+bool AAnthillCharacterBase::UseSelectedInventorySlot()
+{
+	return UseInventorySlot(SelectedInventorySlotIndex);
+}
+
+void AAnthillCharacterBase::OnRep_InventorySlots()
+{
+	// Można tu wywołać delegat/event dla UI, żeby odświeżyć pasek.
 }
 
 void AAnthillCharacterBase::StartSprint()

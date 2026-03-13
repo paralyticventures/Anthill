@@ -6,7 +6,23 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
+#include "Anthill/Pickups/AnthillPickupBase.h"
 #include "AnthillCharacterBase.generated.h"
+
+/** Pojedynczy slot paska przedmiotów (ekwipunku). */
+USTRUCT(BlueprintType)
+struct FInventorySlot
+{
+	GENERATED_BODY()
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	bool bValid = false;
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	EPickupType Type = EPickupType::Heal;
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	float Value1 = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	float Value2 = 0.f;
+};
 
 UCLASS()
 class ANTHILL_API AAnthillCharacterBase : public ACharacter, public IAbilitySystemInterface
@@ -35,6 +51,8 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 	
 	virtual void OnRep_PlayerState() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:	
 	// Called every frame
@@ -118,6 +136,33 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pickups")
 	float GetAttackDamageMultiplier() const;
 
+	// --- Pasek przedmiotów (EQ) ---
+	/** Liczba slotów na pasku (np. 8). */
+	static constexpr int32 InventorySlotCount = 8;
+
+	/** Dodaje przedmiot do pierwszego wolnego slotu. Zwraca true, jeśli dodano. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool AddItemToInventory(EPickupType Type, float Value1, float Value2 = 0.f);
+
+	/** Używa przedmiotu ze slotu (np. leczy, daje buff). Zwraca true, jeśli slot był zajęty i użyto. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool UseInventorySlot(int32 SlotIndex);
+
+	/** Zwraca dane slotu (0..InventorySlotCount-1). Dla pustego slotu bValid = false. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	FInventorySlot GetInventorySlot(int32 SlotIndex) const;
+
+	/** Indeks aktualnie wybranego slotu (0..InventorySlotCount-1). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	int32 GetSelectedInventorySlotIndex() const { return SelectedInventorySlotIndex; }
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetSelectedInventorySlotIndex(int32 Index);
+
+	/** Używa przedmiotu z aktualnie wybranego slotu. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool UseSelectedInventorySlot();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
 	float WalkSpeed = 500.f;
@@ -154,4 +199,12 @@ protected:
 
 	float AttackBuffMultiplier = 1.f;
 	float AttackBuffEndTime = 0.f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_InventorySlots, BlueprintReadOnly, Category = "Inventory")
+	TArray<FInventorySlot> InventorySlots;
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Inventory")
+	int32 SelectedInventorySlotIndex = 0;
+
+	UFUNCTION()
+	void OnRep_InventorySlots();
 };

@@ -32,6 +32,10 @@ public:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Pickup")
 	USphereComponent* CollisionSphere;
 
+	/** true = przedmiot trafia na pasek przedmiotów (EQ), false = użycie natychmiastowe (jak dotąd). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup")
+	bool bAddToInventory = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup")
 	EPickupType PickupType = EPickupType::Heal;
 
