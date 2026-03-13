@@ -81,7 +81,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void NotifyAttackPerformed();
 
-	/** Czy można teraz wykonać atak (false w trakcie cooldownu po poprzednim ataku). Sprawdź w Blueprintcie przed Consume Stamina. */
+	/** Czy można teraz wykonać atak (false w trakcie cooldownu po poprzednim ataku). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat")
 	bool CanPerformAttack() const;
 
@@ -96,6 +96,27 @@ public:
 	/** Odrodzenie w miejscu: teleport na Player Start, HP i stamina na 100%%, włączenie inputu. Użyj zamiast Respawn, jeśli RestartPlayer nie działa. */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void ReviveAtPlayerStart();
+
+	// --- Pickupy (pasta itp.) ---
+	/** Przywraca HP (clamp do MaxHealth). */
+	UFUNCTION(BlueprintCallable, Category = "Pickups")
+	void Heal(float Amount);
+
+	/** Zwiększa MaxHealth i opcjonalnie obecne HP. */
+	UFUNCTION(BlueprintCallable, Category = "Pickups")
+	void AddMaxHealth(float Amount);
+
+	/** Zwiększa MaxStamina i opcjonalnie obecną staminę. */
+	UFUNCTION(BlueprintCallable, Category = "Pickups")
+	void AddMaxStamina(float Amount);
+
+	/** Buff do obrażeń ataku: mnożnik (np. 1.5 = +50%%), czas trwania w sekundach. */
+	UFUNCTION(BlueprintCallable, Category = "Pickups")
+	void SetAttackBuff(float Multiplier, float DurationSeconds);
+
+	/** Mnożnik obrażeń ataku (1.0 = brak buffa). Użyj w systemie walki przy liczeniu damage. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Pickups")
+	float GetAttackDamageMultiplier() const;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
@@ -130,4 +151,7 @@ protected:
 	float TimeSinceSprintStopped = 0.f;
 	float TimeSinceLastAttack = 9999.f;
 	float TimeSinceLastAttackTrigger = 9999.f;
+
+	float AttackBuffMultiplier = 1.f;
+	float AttackBuffEndTime = 0.f;
 };
