@@ -3,6 +3,7 @@
 #include "InventoryBarWidget.h"
 #include "Anthill/Characters/AnthillCharacterBase.h"
 #include "Components/Border.h"
+#include "Components/Image.h"
 
 void UInventoryBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
@@ -68,4 +69,20 @@ UBorder* UInventoryBarWidget::GetSlotBorder(int32 SlotIndex) const
 {
 	if (SlotIndex < 0 || SlotIndex >= SlotBorders.Num()) return nullptr;
 	return SlotBorders[SlotIndex];
+}
+
+void UInventoryBarWidget::SetSlotIconImage(int32 SlotIndex, UImage* Image)
+{
+	if (SlotIndex < 0) return;
+	if (SlotIndex >= SlotIconImages.Num())
+	{
+		SlotIconImages.SetNum(SlotIndex + 1);
+	}
+	SlotIconImages[SlotIndex] = Image;
+}
+
+UImage* UInventoryBarWidget::GetSlotIconImage(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= SlotIconImages.Num()) return nullptr;
+	return SlotIconImages[SlotIndex];
 }

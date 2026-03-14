@@ -9,6 +9,7 @@
 #include "InventoryBarWidget.generated.h"
 
 class UBorder;
+class UImage;
 
 /**
  * Widget paska przedmiotów (EQ). W Blueprint: utwórz Widget dziedziczący z tej klasy,
@@ -57,7 +58,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
 	UBorder* GetSlotBorder(int32 SlotIndex) const;
 
+	/** Ustaw referencję do Image (ikonki) dla slotu. Wywołaj w Event Construct: Set Slot Icon Image(0, Image_Inv1), ... */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SetSlotIconImage(int32 SlotIndex, UImage* Image);
+
+	/** Zwraca Image dla slotu (0..7). Użyj z Set Brush from Texture, żeby pokazać ikonę pasty. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	UImage* GetSlotIconImage(int32 SlotIndex) const;
+
 protected:
 	TArray<UBorder*> SlotBorders;
+	TArray<UImage*> SlotIconImages;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 };
