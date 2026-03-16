@@ -37,6 +37,14 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UUserWidget> InventoryBarWidget;
 
+	/** Używa przedmiotu z aktualnie wybranego slotu (0–7). Podłącz do klawisza np. R w Blueprint. */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void UseSelectedInventoryItem();
+
+	/** Ustawia wybrany slot (0–7). Podłącz klawisze 1–8 w Blueprint: Select Inventory Slot(0) … Select Inventory Slot(7). */
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SelectInventorySlot(int32 SlotIndex);
+
 protected:
 	virtual void BeginPlay() override;
 };
