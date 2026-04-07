@@ -44,6 +44,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
 	EGameplayEffectReplicationMode AscReplicationMode = EGameplayEffectReplicationMode::Mixed;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AbilitySystem")
+	TArray<TSubclassOf<UGameplayAbility>> StartingAbilities;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -162,7 +165,14 @@ public:
 	/** Używa przedmiotu z aktualnie wybranego slotu. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool UseSelectedInventorySlot();
+	
+	// Array of abilities to grant & remove
+	UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+	TArray<FGameplayAbilitySpecHandle> GrantAbilities(TArray<TSubclassOf<UGameplayAbility>> AbilitiesToGrant);
 
+	UFUNCTION(BlueprintCallable, Category = "AbilitySystem")
+	void RemoveAbilities(TArray<FGameplayAbilitySpecHandle> AbilityHandlesToRemove);
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
 	float WalkSpeed = 500.f;
