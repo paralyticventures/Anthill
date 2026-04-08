@@ -180,6 +180,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
 	float SprintSpeed = 750.f;
 
+	/** Początkowe / bazowe maks. HP (BasicAttributeSet → MaxHealth). Ustaw w BP jak staminę. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Health", meta = (ClampMin = "0"))
+	float DefaultMaxHealth = 100.f;
+
+	/** Początkowe HP jako ułamek MaxHealth (1 = pełne, 0.5 = połowa). Zaclamowane po starcie. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Health", meta = (ClampMin = "0", ClampMax = "1"))
+	float StartingHealthPercent = 1.f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Stamina")
 	float StaminaDrainPerSecond = 25.f;
 

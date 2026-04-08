@@ -55,6 +55,15 @@ void AAnthillCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 void AAnthillCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Wartości z Class Defaults (BP) są dostępne dopiero po konstrukcji – serwer ustawia atrybuty GAS.
+	if (HasAuthority() && BasicAttributeSet)
+	{
+		const float MaxH = FMath::Max(0.f, DefaultMaxHealth);
+		const float StartH = FMath::Clamp(MaxH * StartingHealthPercent, 0.f, MaxH);
+		BasicAttributeSet->SetMaxHealth(MaxH);
+		BasicAttributeSet->SetHealth(StartH);
+	}
 }
 
 // Called every frame
