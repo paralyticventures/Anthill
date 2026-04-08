@@ -38,6 +38,10 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	int32 SelectedSlotIndex = 0;
 
+	/** Rozmiar stosu w każdym slocie (0 = pusty lub nieużywany). */
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	TArray<int32> SlotStackCounts;
+
 	/** Liczba slotów (zgodna z Character::InventorySlotCount). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
 	int32 GetSlotCount() const { return AAnthillCharacterBase::InventorySlotCount; }
@@ -49,6 +53,10 @@ public:
 	/** Typ przedmiotu w danym slocie (0..7). Sprawdź IsSlotValid przed użyciem. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
 	EPickupType GetSlotType(int32 SlotIndex) const;
+
+	/** Liczba sztuk w slocie (np. do tekstu "x3"). 0 jeśli pusty. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	int32 GetSlotStackCount(int32 SlotIndex) const;
 
 	/** Ustaw referencję do Bordera dla slotu (wywołaj w Event Construct: Set Slot Border(0, Inv1), Set Slot Border(1, Inv2), ...). */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")

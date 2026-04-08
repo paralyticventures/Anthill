@@ -7,6 +7,10 @@
 void UHealthStaminaWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+	if (IsDesignTime())
+	{
+		return;
+	}
 	RefreshFromCharacter();
 }
 

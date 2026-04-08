@@ -13,6 +13,18 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+namespace
+{
+static constexpr float InventoryValueTolerance = 0.001f;
+
+static bool InventorySlotsStackTogether(const FInventorySlot& A, const FInventorySlot& B)
+{
+	return A.Type == B.Type
+		&& FMath::IsNearlyEqual(A.Value1, B.Value1, InventoryValueTolerance)
+		&& FMath::IsNearlyEqual(A.Value2, B.Value2, InventoryValueTolerance);
+}
+}
+
 // Sets default values
 AAnthillCharacterBase::AAnthillCharacterBase()
 {
@@ -325,14 +337,35 @@ float AAnthillCharacterBase::GetAttackDamageMultiplier() const
 bool AAnthillCharacterBase::AddItemToInventory(EPickupType Type, float Value1, float Value2)
 {
 	if (!HasAuthority() || InventorySlots.Num() != InventorySlotCount) return false;
+
+	const int32 MaxStack = FMath::Max(1, MaxInventoryStackPerSlot);
+
+	FInventorySlot Candidate;
+	Candidate.bValid = true;
+	Candidate.Type = Type;
+	Candidate.Value1 = Value1;
+	Candidate.Value2 = Value2;
+
+	// Najpierw dokładaj do istniejącego stosu (ten sam typ i parametry).
+	for (FInventorySlot& Slot : InventorySlots)
+	{
+		if (Slot.bValid && InventorySlotsStackTogether(Slot, Candidate))
+		{
+			if (Slot.StackCount < MaxStack)
+			{
+				Slot.StackCount++;
+				return true;
+			}
+		}
+	}
+
+	// Pełny stos lub brak dopasowania — pierwszy wolny slot.
 	for (FInventorySlot& Slot : InventorySlots)
 	{
 		if (!Slot.bValid)
 		{
-			Slot.bValid = true;
-			Slot.Type = Type;
-			Slot.Value1 = Value1;
-			Slot.Value2 = Value2;
+			Slot = Candidate;
+			Slot.StackCount = 1;
 			return true;
 		}
 	}
@@ -344,6 +377,20 @@ bool AAnthillCharacterBase::UseInventorySlot(int32 SlotIndex)
 	if (!HasAuthority() || SlotIndex < 0 || SlotIndex >= InventorySlots.Num()) return false;
 	FInventorySlot& Slot = InventorySlots[SlotIndex];
 	if (!Slot.bValid || !BasicAttributeSet) return false;
+
+	if (const UWorld* World = GetWorld())
+	{
+		const float Now = World->GetTimeSeconds();
+		if (Now - LastInventoryUseTime < InventoryUseMinIntervalSeconds)
+		{
+			return false;
+		}
+	}
+
+	if (Slot.StackCount < 1)
+	{
+		Slot.StackCount = 1;
+	}
 
 	switch (Slot.Type)
 	{
@@ -362,8 +409,18 @@ bool AAnthillCharacterBase::UseInventorySlot(int32 SlotIndex)
 	default:
 		break;
 	}
-	Slot.bValid = false;
-	Slot.Value1 = Slot.Value2 = 0.f;
+
+	Slot.StackCount = FMath::Max(0, Slot.StackCount - 1);
+	if (Slot.StackCount <= 0)
+	{
+		Slot.bValid = false;
+		Slot.Value1 = Slot.Value2 = 0.f;
+		Slot.StackCount = 0;
+	}
+	if (const UWorld* World = GetWorld())
+	{
+		LastInventoryUseTime = World->GetTimeSeconds();
+	}
 	return true;
 }
 
