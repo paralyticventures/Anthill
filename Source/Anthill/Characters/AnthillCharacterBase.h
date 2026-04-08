@@ -22,6 +22,10 @@ struct FInventorySlot
 	float Value1 = 0.f;
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	float Value2 = 0.f;
+
+	/** Ilość w stosie (≥1 gdy bValid). Przy użyciu jednej sztuki maleje o 1. */
+	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	int32 StackCount = 0;
 };
 
 UCLASS()
@@ -223,6 +227,20 @@ protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Inventory")
 	int32 SelectedInventorySlotIndex = 0;
 
+	/** Maks. sztuk tego samego przedmiotu (Type + Value1 + Value2) w jednym slocie. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory", meta = (ClampMin = "1"))
+	int32 MaxInventoryStackPerSlot = 99;
+
+	/**
+	 * Minimalny czas (s) między użyciami przedmiotu z paska (tylko serwer).
+	 * Zapobiega zejściu całego stosu przy jednym „naciśnięciu”, gdy input (np. Enhanced Input Triggered)
+	 * wywołuje akcję wiele razy na klatkę / przy trzymaniu klawisza.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory", meta = (ClampMin = "0"))
+	float InventoryUseMinIntervalSeconds = 0.22f;
+
 	UFUNCTION()
 	void OnRep_InventorySlots();
+
+	float LastInventoryUseTime = -1e9f;
 };

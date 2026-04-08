@@ -8,6 +8,10 @@
 void UInventoryBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+	if (IsDesignTime())
+	{
+		return;
+	}
 	RefreshFromCharacter();
 }
 
@@ -22,6 +26,7 @@ void UInventoryBarWidget::RefreshFromCharacter()
 	const int32 N = GetSlotCount();
 	SlotTypes.SetNum(N);
 	SlotValid.SetNum(N);
+	SlotStackCounts.SetNum(N);
 
 	if (!Character)
 	{
@@ -29,6 +34,7 @@ void UInventoryBarWidget::RefreshFromCharacter()
 		{
 			SlotValid[i] = false;
 			SlotTypes[i] = EPickupType::Heal;
+			SlotStackCounts[i] = 0;
 		}
 		SelectedSlotIndex = 0;
 		return;
@@ -40,6 +46,7 @@ void UInventoryBarWidget::RefreshFromCharacter()
 		const FInventorySlot InvSlot = Character->GetInventorySlot(i);
 		SlotValid[i] = InvSlot.bValid;
 		SlotTypes[i] = InvSlot.Type;
+		SlotStackCounts[i] = InvSlot.bValid ? InvSlot.StackCount : 0;
 	}
 }
 
@@ -53,6 +60,12 @@ EPickupType UInventoryBarWidget::GetSlotType(int32 SlotIndex) const
 {
 	if (SlotIndex < 0 || SlotIndex >= SlotTypes.Num()) return EPickupType::Heal;
 	return SlotTypes[SlotIndex];
+}
+
+int32 UInventoryBarWidget::GetSlotStackCount(int32 SlotIndex) const
+{
+	if (SlotIndex < 0 || SlotIndex >= SlotStackCounts.Num()) return 0;
+	return SlotStackCounts[SlotIndex];
 }
 
 void UInventoryBarWidget::SetSlotBorder(int32 SlotIndex, UBorder* Border)
