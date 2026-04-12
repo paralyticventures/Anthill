@@ -37,6 +37,17 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UUserWidget> InventoryBarWidget;
 
+	/** Menu pauzy (klawisz P). Ustaw w BP kontrolera, np. WBP_PauseMenu — bez tego P nic nie zrobi. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Pause")
+	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI|Pause")
+	TObjectPtr<UUserWidget> PauseMenuWidget;
+
+	/** Zamyka menu pauzy i wznawia grę (podłącz do przycisku „Wznów” w WBP). */
+	UFUNCTION(BlueprintCallable, Category = "UI|Pause")
+	void ClosePauseMenu();
+
 	/** Używa przedmiotu z aktualnie wybranego slotu (0–7). Podłącz do klawisza np. R w Blueprint. */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void UseSelectedInventoryItem();
@@ -47,4 +58,15 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* InPawn) override;
+	virtual void SetupInputComponent() override;
+
+	/** Po menu (kursor + UI) przywraca sterowanie grą — chodzenie i obrót myszą. */
+	void ApplyGameInputMode();
+
+	void TogglePauseMenu();
+	void ShowPauseMenu();
+	void HidePauseMenu();
+
+	bool bPauseMenuOpen = false;
 };
