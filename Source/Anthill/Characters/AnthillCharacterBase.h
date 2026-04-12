@@ -6,27 +6,8 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "Anthill/Pickups/AnthillPickupBase.h"
+#include "Anthill/AnthillInventoryTypes.h"
 #include "AnthillCharacterBase.generated.h"
-
-/** Pojedynczy slot paska przedmiotów (ekwipunku). */
-USTRUCT(BlueprintType)
-struct FInventorySlot
-{
-	GENERATED_BODY()
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	bool bValid = false;
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	EPickupType Type = EPickupType::Heal;
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	float Value1 = 0.f;
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	float Value2 = 0.f;
-
-	/** Ilość w stosie (≥1 gdy bValid). Przy użyciu jednej sztuki maleje o 1. */
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	int32 StackCount = 0;
-};
 
 UCLASS()
 class ANTHILL_API AAnthillCharacterBase : public ACharacter, public IAbilitySystemInterface
@@ -54,7 +35,13 @@ protected:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-	
+
+	/** Tylko gracz (PlayerController): odczyt pending zapisu z GI albo domyślne HP. */
+	void ApplyInitialStatsAndLoadRestore();
+
+	/** AI i inne: domyślne HP — bez konsumowania zapisu (jeden pending na GI). */
+	void ApplyDefaultSpawnStatsOnly();
+
 	virtual void PossessedBy(AController* NewController) override;
 	
 	virtual void OnRep_PlayerState() override;
@@ -243,4 +230,7 @@ protected:
 	void OnRep_InventorySlots();
 
 	float LastInventoryUseTime = -1e9f;
+
+	/** Zapobiega wielokrotnemu ApplyInitialStatsAndLoadRestore (np. przy ponownym Possess). */
+	bool bAnthillInitialStatsApplied = false;
 };
