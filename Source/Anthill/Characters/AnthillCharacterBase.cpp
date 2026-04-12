@@ -3,6 +3,7 @@
 
 #include "AnthillCharacterBase.h"
 
+#include "Anthill/AnthillGameInstance.h"
 #include "Anthill/GameplayAbilitySystem/Attributes/BasicAttributeSet.h"
 #include "Anthill/Pickups/AnthillPickupBase.h"
 #include "Components/CapsuleComponent.h"
@@ -67,15 +68,69 @@ void AAnthillCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 void AAnthillCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
-	// Wartości z Class Defaults (BP) są dostępne dopiero po konstrukcji – serwer ustawia atrybuty GAS.
-	if (HasAuthority() && BasicAttributeSet)
+void AAnthillCharacterBase::ApplyDefaultSpawnStatsOnly()
+{
+	if (bAnthillInitialStatsApplied || !BasicAttributeSet)
+	{
+		return;
+	}
+
+	const float MaxH = FMath::Max(0.f, DefaultMaxHealth);
+	const float StartH = FMath::Clamp(MaxH * StartingHealthPercent, 0.f, MaxH);
+	BasicAttributeSet->SetMaxHealth(MaxH);
+	BasicAttributeSet->SetHealth(StartH);
+	bAnthillInitialStatsApplied = true;
+}
+
+void AAnthillCharacterBase::ApplyInitialStatsAndLoadRestore()
+{
+	if (bAnthillInitialStatsApplied || !BasicAttributeSet || !GetWorld())
+	{
+		return;
+	}
+
+	UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(GetWorld()->GetGameInstance());
+	FAnthillPendingLoadData Pending{};
+	const bool bConsumed = GI && GI->ConsumePendingLoad(Pending);
+
+	if (bConsumed && Pending.bHasCharacterState)
+	{
+		const float MaxH = FMath::Max(1.f, Pending.MaxHealth);
+		const float MaxS = FMath::Max(1.f, Pending.MaxStamina);
+		const float H = FMath::Clamp(Pending.Health, 0.f, MaxH);
+		const float S = FMath::Clamp(Pending.Stamina, 0.f, MaxS);
+		BasicAttributeSet->SetMaxHealth(MaxH);
+		BasicAttributeSet->SetHealth(H);
+		BasicAttributeSet->SetMaxStamina(MaxS);
+		BasicAttributeSet->SetStamina(S);
+
+		InventorySlots.SetNum(InventorySlotCount);
+		for (int32 i = 0; i < InventorySlotCount; ++i)
+		{
+			InventorySlots[i] = Pending.InventorySlots.IsValidIndex(i) ? Pending.InventorySlots[i] : FInventorySlot();
+		}
+		SelectedInventorySlotIndex = FMath::Clamp(Pending.SelectedInventorySlotIndex, 0, InventorySlotCount - 1);
+	}
+	else
 	{
 		const float MaxH = FMath::Max(0.f, DefaultMaxHealth);
 		const float StartH = FMath::Clamp(MaxH * StartingHealthPercent, 0.f, MaxH);
 		BasicAttributeSet->SetMaxHealth(MaxH);
 		BasicAttributeSet->SetHealth(StartH);
 	}
+
+	if (bConsumed && Pending.bHasTransform)
+	{
+		SetActorTransform(Pending.Transform, false, nullptr, ETeleportType::TeleportPhysics);
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			PC->SetControlRotation(Pending.Transform.GetRotation().Rotator());
+		}
+	}
+
+	bAnthillInitialStatsApplied = true;
 }
 
 // Called every frame
@@ -194,6 +249,19 @@ void AAnthillCharacterBase::PossessedBy(AController* NewController)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		GrantAbilities(StartingAbilities);
+	}
+
+	if (HasAuthority())
+	{
+		// Jedna kopia stanu z zapisu w GI — tylko pionek gracza może ją pobrać (moby nie zjadają transformu).
+		if (Cast<APlayerController>(NewController))
+		{
+			ApplyInitialStatsAndLoadRestore();
+		}
+		else
+		{
+			ApplyDefaultSpawnStatsOnly();
+		}
 	}
 }
 

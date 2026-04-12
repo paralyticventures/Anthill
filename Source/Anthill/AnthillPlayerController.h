@@ -37,7 +37,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UUserWidget> InventoryBarWidget;
 
-	/** Menu pauzy (klawisz P). Ustaw w BP kontrolera, np. WBP_PauseMenu — bez tego P nic nie zrobi. */
+	/** Menu pauzy (Esc lub P). Ustaw w BP kontrolera, np. WBP_PauseMenu. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Pause")
 	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
 

@@ -1,9 +1,11 @@
 #include "AnthillMenuLibrary.h"
 
 #include "../AnthillGameInstance.h"
+#include "Anthill/Characters/AnthillCharacterBase.h"
 #include "AnthillSaveGame.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 
@@ -143,6 +145,28 @@ bool UAnthillMenuLibrary::SaveCurrentGameToSlot(UObject* WorldContextObject, int
 		SaveGameInstance->TotalPlayTimeSeconds = GI->GetRunningPlayTimeSeconds();
 	}
 
+	SaveGameInstance->bHasPlayerTransform = false;
+	SaveGameInstance->bHasCharacterState = false;
+	if (APawn* Pawn = UGameplayStatics::GetPlayerPawn(World, 0))
+	{
+		SaveGameInstance->PlayerTransform = Pawn->GetActorTransform();
+		SaveGameInstance->bHasPlayerTransform = true;
+		if (AAnthillCharacterBase* Ch = Cast<AAnthillCharacterBase>(Pawn))
+		{
+			SaveGameInstance->bHasCharacterState = true;
+			SaveGameInstance->SavedHealth = Ch->GetHealth();
+			SaveGameInstance->SavedMaxHealth = Ch->GetMaxHealth();
+			SaveGameInstance->SavedStamina = Ch->GetStamina();
+			SaveGameInstance->SavedMaxStamina = Ch->GetMaxStamina();
+			SaveGameInstance->SavedInventorySlots.Reset();
+			for (int32 i = 0; i < AAnthillCharacterBase::InventorySlotCount; ++i)
+			{
+				SaveGameInstance->SavedInventorySlots.Add(Ch->GetInventorySlot(i));
+			}
+			SaveGameInstance->SavedSelectedInventorySlotIndex = Ch->GetSelectedInventorySlotIndex();
+		}
+	}
+
 	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotNameFromIndex(SlotIndex), SaveUserIndex);
 }
 
@@ -163,6 +187,7 @@ bool UAnthillMenuLibrary::LoadGameFromSlotAndOpenMap(UObject* WorldContextObject
 	if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject)))
 	{
 		GI->SetSessionPlayTimeFromSave(Loaded->TotalPlayTimeSeconds);
+		GI->SetPendingLoadFromSaveGame(Loaded);
 	}
 
 	OpenLevelByPath(WorldContextObject, Loaded->MapPackagePath);

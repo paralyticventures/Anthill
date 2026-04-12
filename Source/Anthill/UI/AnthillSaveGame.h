@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "Anthill/AnthillInventoryTypes.h"
 #include "AnthillSaveGame.generated.h"
 
 /** Minimalne dane zapisu (rozszerz o stan gracza / ekwipunek w miarę potrzeb). */
@@ -29,4 +30,34 @@ public:
 	/** Czas utworzenia zapisu. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FDateTime SavedAt = FDateTime::UtcNow();
+
+	/** Jeśli true, po wczytaniu mapy postać zostanie ustawiona w zapisanej pozycji (nie przy Player Start). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	bool bHasPlayerTransform = false;
+
+	/** Pozycja i rotacja postaci w momencie zapisu (świat gry). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FTransform PlayerTransform;
+
+	/** Stan GAS + ekwipunek (wypełniane przy zapisie z AnthillCharacterBase). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	bool bHasCharacterState = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float SavedHealth = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float SavedMaxHealth = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float SavedStamina = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float SavedMaxStamina = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<FInventorySlot> SavedInventorySlots;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 SavedSelectedInventorySlotIndex = 0;
 };

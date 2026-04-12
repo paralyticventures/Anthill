@@ -1,8 +1,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Anthill/AnthillInventoryTypes.h"
 #include "Engine/GameInstance.h"
+#include "Math/Transform.h"
 #include "AnthillGameInstance.generated.h"
+
+/** Kopia danych z UAnthillSaveGame przed OpenLevel — konsumowana przez postać po wejściu na mapę. */
+struct FAnthillPendingLoadData
+{
+	bool bHasPending = false;
+	bool bHasTransform = false;
+	FTransform Transform;
+	bool bHasCharacterState = false;
+	float Health = 0.f;
+	float MaxHealth = 100.f;
+	float Stamina = 0.f;
+	float MaxStamina = 100.f;
+	TArray<FInventorySlot> InventorySlots;
+	int32 SelectedInventorySlotIndex = 0;
+};
+
+class UAnthillSaveGame;
 
 /** Globalny stan + ścieżki map. Domyślne wartości w konstruktorze (AnthillGameInstance.cpp). */
 UCLASS()
@@ -44,4 +63,12 @@ public:
 	float GetRunningPlayTimeSeconds() const { return RunningPlayTimeSeconds; }
 
 	bool IsPlaytimeGameplayMap(const class UWorld* World) const;
+
+	/** Wywołaj po wczytaniu UAnthillSaveGame, przed OpenLevel. */
+	void SetPendingLoadFromSaveGame(const UAnthillSaveGame* Save);
+	void ClearPendingLoad();
+	bool ConsumePendingLoad(FAnthillPendingLoadData& OutData);
+
+private:
+	FAnthillPendingLoadData PendingLoad;
 };

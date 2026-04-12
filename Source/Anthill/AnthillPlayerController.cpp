@@ -79,6 +79,7 @@ void AAnthillPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
 	if (InputComponent)
 	{
+		InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &AAnthillPlayerController::TogglePauseMenu);
 		InputComponent->BindKey(EKeys::P, IE_Pressed, this, &AAnthillPlayerController::TogglePauseMenu);
 	}
 }

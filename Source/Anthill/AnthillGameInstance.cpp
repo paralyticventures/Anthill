@@ -1,4 +1,5 @@
 #include "AnthillGameInstance.h"
+#include "Anthill/UI/AnthillSaveGame.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -12,6 +13,7 @@ UAnthillGameInstance::UAnthillGameInstance()
 void UAnthillGameInstance::ResetSessionPlayTime()
 {
 	RunningPlayTimeSeconds = 0.f;
+	ClearPendingLoad();
 }
 
 void UAnthillGameInstance::SetSessionPlayTimeFromSave(float TotalSecondsFromSave)
@@ -54,5 +56,43 @@ bool UAnthillGameInstance::IsPlaytimeGameplayMap(const UWorld* World) const
 	{
 		return false;
 	}
+	return true;
+}
+
+void UAnthillGameInstance::SetPendingLoadFromSaveGame(const UAnthillSaveGame* Save)
+{
+	ClearPendingLoad();
+	if (!Save)
+	{
+		return;
+	}
+	PendingLoad.bHasPending = true;
+	PendingLoad.bHasTransform = Save->bHasPlayerTransform;
+	PendingLoad.Transform = Save->PlayerTransform;
+	PendingLoad.bHasCharacterState = Save->bHasCharacterState;
+	if (Save->bHasCharacterState)
+	{
+		PendingLoad.Health = Save->SavedHealth;
+		PendingLoad.MaxHealth = Save->SavedMaxHealth;
+		PendingLoad.Stamina = Save->SavedStamina;
+		PendingLoad.MaxStamina = Save->SavedMaxStamina;
+		PendingLoad.InventorySlots = Save->SavedInventorySlots;
+		PendingLoad.SelectedInventorySlotIndex = Save->SavedSelectedInventorySlotIndex;
+	}
+}
+
+void UAnthillGameInstance::ClearPendingLoad()
+{
+	PendingLoad = FAnthillPendingLoadData();
+}
+
+bool UAnthillGameInstance::ConsumePendingLoad(FAnthillPendingLoadData& OutData)
+{
+	if (!PendingLoad.bHasPending)
+	{
+		return false;
+	}
+	OutData = PendingLoad;
+	PendingLoad = FAnthillPendingLoadData();
 	return true;
 }
