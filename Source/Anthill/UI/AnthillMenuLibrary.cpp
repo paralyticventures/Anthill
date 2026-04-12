@@ -143,6 +143,7 @@ bool UAnthillMenuLibrary::SaveCurrentGameToSlot(UObject* WorldContextObject, int
 	if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject)))
 	{
 		SaveGameInstance->TotalPlayTimeSeconds = GI->GetRunningPlayTimeSeconds();
+		SaveGameInstance->CollectedPickupKeys = GI->GetCollectedPickupKeysSnapshot();
 	}
 
 	SaveGameInstance->bHasPlayerTransform = false;
@@ -188,6 +189,7 @@ bool UAnthillMenuLibrary::LoadGameFromSlotAndOpenMap(UObject* WorldContextObject
 	{
 		GI->SetSessionPlayTimeFromSave(Loaded->TotalPlayTimeSeconds);
 		GI->SetPendingLoadFromSaveGame(Loaded);
+		GI->SetCollectedPickupKeysFromSave(Loaded->CollectedPickupKeys);
 	}
 
 	OpenLevelByPath(WorldContextObject, Loaded->MapPackagePath);

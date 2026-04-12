@@ -14,6 +14,7 @@ void UAnthillGameInstance::ResetSessionPlayTime()
 {
 	RunningPlayTimeSeconds = 0.f;
 	ClearPendingLoad();
+	ClearCollectedPickupKeys();
 }
 
 void UAnthillGameInstance::SetSessionPlayTimeFromSave(float TotalSecondsFromSave)
@@ -95,4 +96,45 @@ bool UAnthillGameInstance::ConsumePendingLoad(FAnthillPendingLoadData& OutData)
 	OutData = PendingLoad;
 	PendingLoad = FAnthillPendingLoadData();
 	return true;
+}
+
+void UAnthillGameInstance::AddCollectedPickupKey(const FString& Key)
+{
+	if (!Key.IsEmpty())
+	{
+		CollectedPickupKeys.Add(Key);
+	}
+}
+
+bool UAnthillGameInstance::IsPickupKeyCollected(const FString& Key) const
+{
+	return !Key.IsEmpty() && CollectedPickupKeys.Contains(Key);
+}
+
+void UAnthillGameInstance::SetCollectedPickupKeysFromSave(const TArray<FString>& Keys)
+{
+	CollectedPickupKeys.Reset();
+	for (const FString& K : Keys)
+	{
+		if (!K.IsEmpty())
+		{
+			CollectedPickupKeys.Add(K);
+		}
+	}
+}
+
+void UAnthillGameInstance::ClearCollectedPickupKeys()
+{
+	CollectedPickupKeys.Reset();
+}
+
+TArray<FString> UAnthillGameInstance::GetCollectedPickupKeysSnapshot() const
+{
+	TArray<FString> Out;
+	Out.Reserve(CollectedPickupKeys.Num());
+	for (const FString& K : CollectedPickupKeys)
+	{
+		Out.Add(K);
+	}
+	return Out;
 }

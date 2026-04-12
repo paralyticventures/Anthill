@@ -1,9 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AnthillPickupBase.h"
+#include "Anthill/AnthillGameInstance.h"
 #include "Anthill/Characters/AnthillCharacterBase.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/Actor.h"
+#include "Kismet/GameplayStatics.h"
 
 AAnthillPickupBase::AAnthillPickupBase()
 {
@@ -16,9 +18,57 @@ AAnthillPickupBase::AAnthillPickupBase()
 	CollisionSphere->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
 }
 
+FString AAnthillPickupBase::GetPickupSaveKey() const
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return FString();
+	}
+	const FString LevelName = UGameplayStatics::GetCurrentLevelName(World);
+	if (!SavePickupIdOverride.IsNone())
+	{
+		return FString::Printf(TEXT("%s|%s"), *LevelName, *SavePickupIdOverride.ToString());
+	}
+	return FString::Printf(TEXT("%s|%s"), *LevelName, *GetFName().ToString());
+}
+
+void AAnthillPickupBase::RegisterPickupCollectedForSave()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(World->GetGameInstance()))
+	{
+		GI->AddCollectedPickupKey(GetPickupSaveKey());
+	}
+}
+
 void AAnthillPickupBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(World->GetGameInstance()))
+			{
+				if (GI->IsPickupKeyCollected(GetPickupSaveKey()))
+				{
+					Destroy();
+					return;
+				}
+			}
+		}
+	}
+
 	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &AAnthillPickupBase::OnSphereOverlap);
 }
 
@@ -48,6 +98,7 @@ void AAnthillPickupBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 		}
 		if (Character->AddItemToInventory(PickupType, V1, V2))
 		{
+			RegisterPickupCollectedForSave();
 			Destroy();
 		}
 		return;
@@ -71,5 +122,6 @@ void AAnthillPickupBase::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 		break;
 	}
 
+	RegisterPickupCollectedForSave();
 	Destroy();
 }

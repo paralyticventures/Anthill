@@ -69,6 +69,15 @@ public:
 	void ClearPendingLoad();
 	bool ConsumePendingLoad(FAnthillPendingLoadData& OutData);
 
+	/** Zebrane pasty na mapie (sesja + wczytane z zapisu). */
+	void AddCollectedPickupKey(const FString& Key);
+	bool IsPickupKeyCollected(const FString& Key) const;
+	void SetCollectedPickupKeysFromSave(const TArray<FString>& Keys);
+	void ClearCollectedPickupKeys();
+	TArray<FString> GetCollectedPickupKeysSnapshot() const;
+
 private:
 	FAnthillPendingLoadData PendingLoad;
+
+	TSet<FString> CollectedPickupKeys;
 };
