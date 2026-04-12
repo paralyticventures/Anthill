@@ -56,6 +56,7 @@ void UAnthillMenuLibrary::OpenGameLevel(UObject* WorldContextObject)
 {
 	if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject)))
 	{
+		GI->ResetSessionPlayTime();
 		OpenLevelFromSoftPath(WorldContextObject, GI->GameLevel);
 	}
 }
@@ -100,14 +101,7 @@ FAnthillSaveSlotInfo UAnthillMenuLibrary::GetSaveSlotInfo(UObject* WorldContextO
 		Info.PlayTimeSeconds = Loaded->TotalPlayTimeSeconds;
 		Info.MapNameShort = Loaded->MapPackagePath;
 		Info.SavedAtText = Loaded->SavedAt.ToString(TEXT("%Y-%m-%d  %H:%M"));
-		Info.DescriptionText = FString::Printf(
-			TEXT("%s | %.0f s"),
-			*Loaded->SlotDisplayName,
-			Loaded->TotalPlayTimeSeconds);
-		if (!Loaded->MapPackagePath.IsEmpty())
-		{
-			Info.DescriptionText += FString::Printf(TEXT(" | %s"), *Loaded->MapPackagePath);
-		}
+		Info.DescriptionText = FString::Printf(TEXT("%.0f s"), Loaded->TotalPlayTimeSeconds);
 	}
 	return Info;
 }
@@ -144,7 +138,11 @@ bool UAnthillMenuLibrary::SaveCurrentGameToSlot(UObject* WorldContextObject, int
 	}
 
 	SaveGameInstance->SavedAt = FDateTime::UtcNow();
-	// TotalPlayTimeSeconds — możesz później sumować z DeltaTime w GI.
+	if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject)))
+	{
+		SaveGameInstance->TotalPlayTimeSeconds = GI->GetRunningPlayTimeSeconds();
+	}
+
 	return UGameplayStatics::SaveGameToSlot(SaveGameInstance, SlotNameFromIndex(SlotIndex), SaveUserIndex);
 }
 
@@ -160,6 +158,11 @@ bool UAnthillMenuLibrary::LoadGameFromSlotAndOpenMap(UObject* WorldContextObject
 	if (!Loaded || Loaded->MapPackagePath.IsEmpty())
 	{
 		return false;
+	}
+
+	if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject)))
+	{
+		GI->SetSessionPlayTimeFromSave(Loaded->TotalPlayTimeSeconds);
 	}
 
 	OpenLevelByPath(WorldContextObject, Loaded->MapPackagePath);
