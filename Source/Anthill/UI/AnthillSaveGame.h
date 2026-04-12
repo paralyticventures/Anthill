@@ -60,4 +60,11 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 SavedSelectedInventorySlotIndex = 0;
+
+	/**
+	 * Klucze zebranych pickupów (format: NazwaMapy|ActorName lub NazwaMapy|SavePickupIdOverride).
+	 * Po Load te aktory nie respawnują się na mapie.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<FString> CollectedPickupKeys;
 };

@@ -59,10 +59,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pickup", meta = (EditCondition = "PickupType == EPickupType::AttackBuff", ClampMin = "0.1"))
 	float AttackBuffDurationSeconds = 10.f;
 
+	/**
+	 * Opcjonalny unikalny ID w obrębie mapy (gdy wiele past ma to samo imię aktora w PIE).
+	 * Puste = używane jest GetFName() aktora.
+	 */
+	UPROPERTY(EditAnywhere, Category = "Save")
+	FName SavePickupIdOverride;
+
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
 	virtual void BeginPlay() override;
+
+	FString GetPickupSaveKey() const;
+	void RegisterPickupCollectedForSave();
 };
