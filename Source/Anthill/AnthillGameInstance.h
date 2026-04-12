@@ -27,4 +27,21 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Anthill|Maps", meta = (AllowedClasses = "/Script/Engine.World"))
 	FSoftObjectPath GameLevel;
+
+	/** Skumulowany czas gry (sekundy) — aktualizowany na mapie gry, zapisywany w slocie. */
+	UPROPERTY(BlueprintReadOnly, Category = "Anthill|Save")
+	float RunningPlayTimeSeconds = 0.f;
+
+	/** Wywołaj przy „New Game” (czas od zera). */
+	void ResetSessionPlayTime();
+
+	/** Po wczytaniu zapisu — kontynuacja licznika z pliku. */
+	void SetSessionPlayTimeFromSave(float TotalSecondsFromSave);
+
+	/** Wołane z PlayerController::Tick — tylko mapa gry, bez pauzy. */
+	void AddPlayTimeSeconds(float DeltaSeconds, const class UWorld* World);
+
+	float GetRunningPlayTimeSeconds() const { return RunningPlayTimeSeconds; }
+
+	bool IsPlaytimeGameplayMap(const class UWorld* World) const;
 };

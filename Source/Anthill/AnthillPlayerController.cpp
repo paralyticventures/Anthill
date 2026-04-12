@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AnthillPlayerController.h"
+#include "Anthill/AnthillGameInstance.h"
 #include "Anthill/Characters/AnthillCharacterBase.h"
 #include "Anthill/UI/HealthStaminaWidget.h"
 #include "Anthill/UI/InventoryBarWidget.h"
@@ -28,6 +29,18 @@ void AAnthillPlayerController::ApplyGameInputMode()
 	SetShowMouseCursor(false);
 	SetIgnoreLookInput(false);
 	SetIgnoreMoveInput(false);
+}
+
+void AAnthillPlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (UWorld* World = GetWorld())
+	{
+		if (UAnthillGameInstance* GI = Cast<UAnthillGameInstance>(GetGameInstance()))
+		{
+			GI->AddPlayTimeSeconds(DeltaSeconds, World);
+		}
+	}
 }
 
 void AAnthillPlayerController::BeginPlay()
