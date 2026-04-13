@@ -37,6 +37,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	void HandleHealthChanged(const FOnAttributeChangeData& ChangeData);
+	void HandleDeathInternal();
 
 	/** Tylko gracz (PlayerController): odczyt pending zapisu z GI albo domyślne HP. */
 	void ApplyInitialStatsAndLoadRestore();
@@ -238,4 +239,8 @@ protected:
 
 	/** Blokuje wielokrotne OnDeath przy utrzymującym się HP <= 0. */
 	bool bDeathHandled = false;
+
+	/** Jeśli true, śmierć gracza otwiera Load Menu zamiast logiki respawnu z Blueprintowego OnDeath. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Death")
+	bool bOpenLoadMenuOnDeath = true;
 };

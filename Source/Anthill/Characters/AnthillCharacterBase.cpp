@@ -11,6 +11,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/PlayerStart.h"
+#include "Anthill/UI/AnthillMenuLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
@@ -80,16 +81,36 @@ void AAnthillCharacterBase::HandleHealthChanged(const FOnAttributeChangeData& Ch
 {
 	if (ChangeData.NewValue <= 0.f)
 	{
-		if (!bDeathHandled)
-		{
-			bDeathHandled = true;
-			OnDeath();
-		}
+		HandleDeathInternal();
 	}
 	else
 	{
 		bDeathHandled = false;
 	}
+}
+
+void AAnthillCharacterBase::HandleDeathInternal()
+{
+	if (bDeathHandled)
+	{
+		return;
+	}
+	bDeathHandled = true;
+
+	const bool bIsPlayerPawn = Cast<APlayerController>(GetController()) != nullptr;
+	if (bOpenLoadMenuOnDeath && bIsPlayerPawn)
+	{
+		if (APlayerController* LocalPC = UGameplayStatics::GetPlayerController(this, 0))
+		{
+			if (LocalPC->GetPawn() == this)
+			{
+				UAnthillMenuLibrary::OpenLoadMenuLevel(this);
+				return;
+			}
+		}
+	}
+
+	OnDeath();
 }
 
 void AAnthillCharacterBase::ApplyDefaultSpawnStatsOnly()
@@ -166,11 +187,7 @@ void AAnthillCharacterBase::Tick(float DeltaTime)
 		const float CurrentHealth = BasicAttributeSet->GetHealth();
 		if (CurrentHealth <= 0.f)
 		{
-			if (!bDeathHandled)
-			{
-				bDeathHandled = true;
-				OnDeath();
-			}
+			HandleDeathInternal();
 		}
 		else
 		{
