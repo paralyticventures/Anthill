@@ -78,11 +78,6 @@ void AAnthillCharacterBase::BeginPlay()
 
 void AAnthillCharacterBase::HandleHealthChanged(const FOnAttributeChangeData& ChangeData)
 {
-	if (!HasAuthority())
-	{
-		return;
-	}
-
 	if (ChangeData.NewValue <= 0.f)
 	{
 		if (!bDeathHandled)
@@ -164,6 +159,24 @@ void AAnthillCharacterBase::ApplyInitialStatsAndLoadRestore()
 void AAnthillCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Fallback dla ścieżek obrażeń omijających delegate ASC (np. bezpośredni SetHealth w BP).
+	if (BasicAttributeSet)
+	{
+		const float CurrentHealth = BasicAttributeSet->GetHealth();
+		if (CurrentHealth <= 0.f)
+		{
+			if (!bDeathHandled)
+			{
+				bDeathHandled = true;
+				OnDeath();
+			}
+		}
+		else
+		{
+			bDeathHandled = false;
+		}
+	}
 
 	// Czas od ostatniego ataku (do opóźnienia regeneracji staminy i cooldownu ataku)
 	TimeSinceLastAttack += DeltaTime;
