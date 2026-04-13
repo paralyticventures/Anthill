@@ -14,6 +14,7 @@
 #include "Anthill/UI/AnthillMenuLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "TimerManager.h"
 
 namespace
 {
@@ -100,17 +101,35 @@ void AAnthillCharacterBase::HandleDeathInternal()
 	const bool bIsPlayerPawn = Cast<APlayerController>(GetController()) != nullptr;
 	if (bOpenLoadMenuOnDeath && bIsPlayerPawn)
 	{
+		// Pozwalamy BP odpalić animację śmierci, a dopiero potem przechodzimy do Load Menu.
+		OnDeath();
+
 		if (APlayerController* LocalPC = UGameplayStatics::GetPlayerController(this, 0))
 		{
 			if (LocalPC->GetPawn() == this)
 			{
-				UAnthillMenuLibrary::OpenLoadMenuLevel(this);
+				if (UWorld* World = GetWorld())
+				{
+					World->GetTimerManager().ClearTimer(LoadMenuAfterDeathTimerHandle);
+					World->GetTimerManager().SetTimer(
+						LoadMenuAfterDeathTimerHandle,
+						this,
+						&AAnthillCharacterBase::OpenLoadMenuAfterDeathDelay,
+						FMath::Max(0.f, LoadMenuDelayOnDeathSeconds),
+						false
+					);
+				}
 				return;
 			}
 		}
 	}
 
 	OnDeath();
+}
+
+void AAnthillCharacterBase::OpenLoadMenuAfterDeathDelay()
+{
+	UAnthillMenuLibrary::OpenLoadMenuLevel(this);
 }
 
 void AAnthillCharacterBase::ApplyDefaultSpawnStatsOnly()

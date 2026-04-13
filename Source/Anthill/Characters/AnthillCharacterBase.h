@@ -38,6 +38,7 @@ protected:
 
 	void HandleHealthChanged(const FOnAttributeChangeData& ChangeData);
 	void HandleDeathInternal();
+	void OpenLoadMenuAfterDeathDelay();
 
 	/** Tylko gracz (PlayerController): odczyt pending zapisu z GI albo domyślne HP. */
 	void ApplyInitialStatsAndLoadRestore();
@@ -243,4 +244,10 @@ protected:
 	/** Jeśli true, śmierć gracza otwiera Load Menu zamiast logiki respawnu z Blueprintowego OnDeath. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Death")
 	bool bOpenLoadMenuOnDeath = true;
+
+	/** Opóźnienie (s) przed przejściem do Load Menu, by zdążyła wejść animacja śmierci. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Death", meta = (ClampMin = "0.0"))
+	float LoadMenuDelayOnDeathSeconds = 1.25f;
+
+	FTimerHandle LoadMenuAfterDeathTimerHandle;
 };
