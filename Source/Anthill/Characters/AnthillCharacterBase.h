@@ -247,7 +247,7 @@ protected:
 
 	/** Opóźnienie (s) przed przejściem do Load Menu, by zdążyła wejść animacja śmierci. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Death", meta = (ClampMin = "0.0"))
-	float LoadMenuDelayOnDeathSeconds = 1.25f;
+	float LoadMenuDelayOnDeathSeconds = 4.f;
 
 	FTimerHandle LoadMenuAfterDeathTimerHandle;
 };
