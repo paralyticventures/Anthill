@@ -36,6 +36,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	void HandleHealthChanged(const FOnAttributeChangeData& ChangeData);
+
 	/** Tylko gracz (PlayerController): odczyt pending zapisu z GI albo domyślne HP. */
 	void ApplyInitialStatsAndLoadRestore();
 
@@ -233,4 +235,7 @@ protected:
 
 	/** Zapobiega wielokrotnemu ApplyInitialStatsAndLoadRestore (np. przy ponownym Possess). */
 	bool bAnthillInitialStatsApplied = false;
+
+	/** Blokuje wielokrotne OnDeath przy utrzymującym się HP <= 0. */
+	bool bDeathHandled = false;
 };

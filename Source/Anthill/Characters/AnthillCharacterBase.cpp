@@ -68,6 +68,33 @@ void AAnthillCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 void AAnthillCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (AbilitySystemComponent && BasicAttributeSet)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(BasicAttributeSet->GetHealthAttribute())
+			.AddUObject(this, &AAnthillCharacterBase::HandleHealthChanged);
+	}
+}
+
+void AAnthillCharacterBase::HandleHealthChanged(const FOnAttributeChangeData& ChangeData)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (ChangeData.NewValue <= 0.f)
+	{
+		if (!bDeathHandled)
+		{
+			bDeathHandled = true;
+			OnDeath();
+		}
+	}
+	else
+	{
+		bDeathHandled = false;
+	}
 }
 
 void AAnthillCharacterBase::ApplyDefaultSpawnStatsOnly()
@@ -282,11 +309,6 @@ void AAnthillCharacterBase::ApplyDamageToSelf(float DamageAmount)
 	float H = BasicAttributeSet->GetHealth();
 	H = FMath::Clamp(H - DamageAmount, 0.f, MaxH);
 	BasicAttributeSet->SetHealth(H);
-
-	if (H <= 0.f)
-	{
-		OnDeath();
-	}
 }
 
 void AAnthillCharacterBase::Respawn()
