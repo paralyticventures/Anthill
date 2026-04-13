@@ -168,10 +168,10 @@ public:
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
-	float WalkSpeed = 500.f;
+	float WalkSpeed = 250.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Sprint")
-	float SprintSpeed = 750.f;
+	float SprintSpeed = 500.f;
 
 	/** Początkowe / bazowe maks. HP (BasicAttributeSet → MaxHealth). Ustaw w BP jak staminę. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Attributes|Health", meta = (ClampMin = "0"))
